@@ -1,4 +1,4 @@
-`use client`
+'use client';
 
 const HomeTab = () => {
     return (
@@ -12,7 +12,7 @@ const HomeTab = () => {
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default HomeTab
+export default HomeTab;
