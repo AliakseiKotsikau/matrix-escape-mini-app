@@ -4,19 +4,16 @@
 import SelectedCell from "@/types/SelectedCell";
 import { useState, useEffect } from "react";
 
-// Helper function to generate the grid
 const generateGrid = (n: number): number[][] => {
     return Array.from({ length: n }, () =>
         Array.from({ length: n }, () => Math.round(Math.random()))
     );
 };
 
-// Check if the selected cells match the sequence
 const validateSelectedCells = (
     selectedCells: SelectedCell[],
     sequence: number[]
 ): boolean => {
-    // Extract values from selected cells
     const selectedValues = selectedCells.map((cell) => cell.value);
 
     // Check if the selected values match the sequence
@@ -47,19 +44,18 @@ const GridGame = () => {
     }
 
     const toggleCellSelection = (row: number, col: number, cellValue: number) => {
-        checkSelection();
         if (selectedCells.length < sequence.length) {
-            let newSelectedCell: SelectedCell = {
-                position: [row, col],
-                value: cellValue
-            }
-            setSelectedCells([...selectedCells, newSelectedCell]);
-        }
-    };
+            const newSelectedCell = createSelectedCellObject(row, col, cellValue);
+            const newSelectedCellsArray = [...selectedCells, newSelectedCell];
+            setSelectedCells(newSelectedCellsArray);
 
+            if (newSelectedCellsArray.length === sequence.length) {
+                checkSelection();
+            }
+        }
+    }
 
     const checkSelection = () => {
-
         if (validateSelectedCells(selectedCells, sequence)) {
             setMessage("Correct sequence! You found it!");
         } else {
@@ -67,12 +63,28 @@ const GridGame = () => {
         }
     };
 
-    const checkThatRowOrColumnSame = (row: number, col: number) => {
-        return selectedCells.every((cell) => cell.position[0] === row || cell.position[1] === col);
+    const createSelectedCellObject = (row: number, col: number, cellValue: number): SelectedCell => {
+        return {
+            position: [row, col],
+            value: cellValue
+        };
     }
 
+    const checkThatRowOrColumnSameToPreviouslySelectedCell = (previousCell: SelectedCell | undefined, row: number, col: number) => {
+        if (!previousCell) return false;
+
+        const [prevRow, prevCol] = previousCell.position;
+
+        // Check for vertical or horizontal neighbors
+        const isVerticalNeighbor = Math.abs(prevRow - row) === 1 && prevCol === col;
+        const isHorizontalNeighbor = Math.abs(prevCol - col) === 1 && prevRow === row;
+
+        return isVerticalNeighbor || isHorizontalNeighbor;
+    }
+
+
     return (
-        <div className="p-4 min-h-screen flex flex-col items-center justify-center">
+        <div className="p-4 flex flex-col items-center justify-center h-full">
             <p className="mt-4 pb-10 text-center text-lg font-bold">Find the sequence: {sequence.join(", ")}</p>
             <div
                 className={`grid grid-cols-${gridSize} gap-2 mt-4 w-full`}
@@ -82,15 +94,33 @@ const GridGame = () => {
             >
                 {grid.map((row, rowNumber) =>
                     row.map((cellValue, cellNumber) => {
-                        const isSelected = selectedCells.some((cell) => cell.position[0] === rowNumber && cell.position[1] === cellNumber);
-                        const isOnSameVerticalOrHorizontal = checkThatRowOrColumnSame(rowNumber, cellNumber);
+                        const isSelected = selectedCells.some(
+                            (cell) => cell.position[0] === rowNumber && cell.position[1] === cellNumber
+                        );
+
+                        // Check if the cell is in the same row or column as all other selected cells
+                        const isOnSameVerticalOrHorizontal =
+                            checkThatRowOrColumnSameToPreviouslySelectedCell(selectedCells.at(-2), rowNumber, cellNumber);
+
+                        // Check if it's the last selected cell
+                        const isLastSelected =
+                            selectedCells.at(-1)?.position[0] === rowNumber &&
+                            selectedCells.at(-1)?.position[1] === cellNumber;
+
+                        const isFirstSelected =
+                            selectedCells.at(0)?.position[0] === rowNumber &&
+                            selectedCells.at(0)?.position[1] === cellNumber;
+
+                        // Determine the class for the cell
+                        const cellClass = isSelected
+                            ? isLastSelected && !isFirstSelected ? (isOnSameVerticalOrHorizontal ? "bg-green-400" : "bg-red-400") : "bg-green-400"
+                            : "bg-green-900";
+
                         return (
                             <div
                                 key={`${rowNumber}-${cellNumber}`}
                                 onClick={() => toggleCellSelection(rowNumber, cellNumber, cellValue)}
-                                className={`flex items-center justify-center border cursor-pointer
-              ${isSelected ? isOnSameVerticalOrHorizontal? "bg-green-400" : "bg-red-400" : "bg-green-900"}
-              aspect-square`}
+                                className={`flex items-center justify-center border cursor-pointer ${cellClass} aspect-square`}
                             >
                                 <span
                                     className={`text-2xl sm:text-2xl md:text-3xl lg:text-4xl font-bold ${isSelected ? "text-black" : "text-white"
@@ -103,36 +133,21 @@ const GridGame = () => {
                     })
                 )}
             </div>
-
-            {/* <div className={`grid grid-cols-${gridSize} gap-2 mt-4 w-full max-w-md sm:max-w-lg md:max-w-xl`}>
-                {grid.map((row, i) =>
-                    row.map((cell, j) => {
-                        const isSelected = selectedCells.some(([r, c]) => r === i && c === j);
-                        return (
-                            <div
-                                key={`${i}-${j}`}
-                                onClick={() => toggleCellSelection(i, j)}
-                                className={`flex items-center justify-center border cursor-pointer
-              ${isSelected ? "bg-green-400" : "bg-green-900"}
-              w-full aspect-square`} // Ensures cells are square and adjust dynamically
-                            >
-                                <span
-                                    className={`text-2xl sm:text-2xl md:text-3xl lg:text-4xl font-bold ${isSelected ? "text-black" : "text-white"}`}
-                                >
-                                    {cell}
-                                </span>
-                            </div>
-                        );
-                    })
-                )}
-            </div> */}
             <button
                 onClick={startGame}
                 className="mt-4 ml-2 px-4 py-2 bg-gray-500 text-white rounded"
             >
                 Start
             </button>
-            <p className="mt-4 text-green-600">{message}</p>
+            <p
+                className="mt-4 text-green-600"
+                style={{
+                    minHeight: "1.5rem", // Fixed height to prevent movement
+                    visibility: message ? "visible" : "hidden", // Keeps the space but hides the message when empty
+                }}
+            >
+                {message}
+            </p>
         </div>
     );
 };

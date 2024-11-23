@@ -3,4 +3,4 @@ export type IconProps = {
     className?: string;
 }
 
-export enum TabType { Home, Leaderboard, Friends, Earn}
+export enum TabType { Home, Game, Leaderboard, Friends, Earn}
