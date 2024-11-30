@@ -1,6 +1,7 @@
 // grid-game.ts
 'use client';
 
+import { useGameScore } from "@/contexts/ScoreContext";
 import SelectedCell from "@/types/SelectedCell";
 import { useState, useEffect } from "react";
 
@@ -23,6 +24,8 @@ const GridGame = () => {
     const [sequence, setSequence] = useState<number[]>([]);
     const [selectedCells, setSelectedCells] = useState<SelectedCell[]>([]);
     const [message, setMessage] = useState<string>("");
+
+    const {increaseBy} = useGameScore();
 
     const gridSize = 5;
     const seqLength = 3;
@@ -65,6 +68,7 @@ const GridGame = () => {
 
     const checkSelection = (cellsToCheck: SelectedCell[]) => {
         if (validateSelectedCells(cellsToCheck, sequence)) {
+            increaseBy(sequence.length);
             setMessage("Correct sequence! You found it!");
         } else {
             setMessage("Incorrect sequence. Try again!");
