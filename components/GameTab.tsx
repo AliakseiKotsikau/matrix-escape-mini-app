@@ -14,10 +14,8 @@ const validateSelectedCells = (
     selectedCells: SelectedCell[],
     sequence: number[]
 ): boolean => {
-    const selectedValues = selectedCells.map((cell) => cell.value);
-
     // Check if the selected values match the sequence
-    return selectedValues.every((val, idx) => val === sequence[idx]);
+    return selectedCells.every((cell, idx) => cell.value === sequence[idx]);
 };
 
 const GridGame = () => {
@@ -43,29 +41,43 @@ const GridGame = () => {
         setMessage("");
     }
 
-    const toggleCellSelection = (row: number, col: number, cellValue: number) => {
+    const toggleCellSelection = (selectedCellPosition: number[], cellValue: number) => {
         if (selectedCells.length < sequence.length) {
-            const newSelectedCell = createSelectedCellObject(row, col, cellValue);
-            const newSelectedCellsArray = [...selectedCells, newSelectedCell];
+            const newSelectedCell = createSelectedCellObject(selectedCellPosition, cellValue);
+
+            let newSelectedCellsArray = [];
+
+            const cellAlreadyIsInArray = selectedCells.some(cell => arePositionsSame(cell.position, selectedCellPosition));
+
+            if (cellAlreadyIsInArray) {
+                newSelectedCellsArray = selectedCells.filter(cell => !(arePositionsSame(cell.position, selectedCellPosition)));
+            } else {
+                newSelectedCellsArray = [...selectedCells, newSelectedCell];
+            }
+
             setSelectedCells(newSelectedCellsArray);
 
             if (newSelectedCellsArray.length === sequence.length) {
-                checkSelection();
+                checkSelection(newSelectedCellsArray);
             }
         }
     }
 
-    const checkSelection = () => {
-        if (validateSelectedCells(selectedCells, sequence)) {
+    const checkSelection = (cellsToCheck: SelectedCell[]) => {
+        if (validateSelectedCells(cellsToCheck, sequence)) {
             setMessage("Correct sequence! You found it!");
         } else {
             setMessage("Incorrect sequence. Try again!");
         }
     };
 
-    const createSelectedCellObject = (row: number, col: number, cellValue: number): SelectedCell => {
+    const arePositionsSame = (firstPosition: number[], secondPosition: number[]) => {
+        return firstPosition[0] === secondPosition[0] && firstPosition[1] === secondPosition[1];
+    }
+
+    const createSelectedCellObject = (selectedCellPosition: number[], cellValue: number): SelectedCell => {
         return {
-            position: [row, col],
+            position: selectedCellPosition,
             value: cellValue
         };
     }
@@ -94,9 +106,7 @@ const GridGame = () => {
             >
                 {grid.map((row, rowNumber) =>
                     row.map((cellValue, cellNumber) => {
-                        const isSelected = selectedCells.some(
-                            (cell) => cell.position[0] === rowNumber && cell.position[1] === cellNumber
-                        );
+                        const isSelected = selectedCells.some(cell => arePositionsSame(cell.position, [rowNumber, cellNumber]));
 
                         // Check if the cell is in the same row or column as all other selected cells
                         const isOnSameVerticalOrHorizontal =
@@ -119,7 +129,7 @@ const GridGame = () => {
                         return (
                             <div
                                 key={`${rowNumber}-${cellNumber}`}
-                                onClick={() => toggleCellSelection(rowNumber, cellNumber, cellValue)}
+                                onClick={() => toggleCellSelection([rowNumber, cellNumber], cellValue)}
                                 className={`flex items-center justify-center border cursor-pointer ${cellClass} aspect-square`}
                             >
                                 <span
